@@ -36,9 +36,9 @@ async def set_admin_settings(message: types.Message):
         return
 
     parts = message.text.split()  # type: ignore
-    if len(parts) != 4:
+    if len(parts) != 5:
         await message.answer(
-            "Формат: /set_admin_settings <комиссия> <доставка> <наценка>"
+            "Формат: /set_admin_settings <комиссия> <доставка> <наценка> <стоимость проверки>"
         )
         return
 
@@ -46,6 +46,7 @@ async def set_admin_settings(message: types.Message):
         commision_rate = float(parts[1])
         kilo_delivery = float(parts[2])
         cny_rate_syrcharge = float(parts[3])
+        additional_control = int(parts[4])
     except ValueError:
         await message.answer("Проверьте формат чисел.")
         return
@@ -57,6 +58,7 @@ async def set_admin_settings(message: types.Message):
             commision_rate=commision_rate,
             kilo_delivery=kilo_delivery,
             cny_rate_syrcharge=cny_rate_syrcharge,
+            additional_control=additional_control,
             user_tg_id=message.from_user.id,  # type: ignore
         )
         updated = await repo.update_settings(new_settings)
@@ -64,5 +66,6 @@ async def set_admin_settings(message: types.Message):
             f"Обновлено:\n"
             f"Комиссия: {updated.commision_rate}\n"
             f"Доставка за кг: {updated.kilo_delivery}\n"
-            f"Наценка CNY: {updated.cny_rate_syrcharge}"
+            f"Наценка CNY: {updated.cny_rate_syrcharge}\n"
+            f"Стоимость проверки: {updated.additional_control}"
         )
