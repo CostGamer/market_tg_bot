@@ -19,3 +19,4 @@ class AdminSettings(Base):
         nullable=False, server_default=func.now(), onupdate=func.now()
     )
     user_tg_id: Mapped[int] = mapped_column(nullable=False, unique=True)
+    additional_control: Mapped[int] = mapped_column(nullable=False)

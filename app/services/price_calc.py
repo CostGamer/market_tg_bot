@@ -26,10 +26,15 @@ class PriceCalculator(CommonService):
         if check_over_limit:
             fee = await self.calculate_fee(cny_amount, cny_rate, eur_rate)
             total_price = (
-                self.price * (cny_rate + admin_settings.cny_rate_syrcharge)
-            ) + fee
+                (self.price * (cny_rate + admin_settings.cny_rate_syrcharge))
+                + fee
+                + admin_settings.additional_control
+            )
         else:
-            total_price = self.price * (cny_rate + admin_settings.cny_rate_syrcharge)
+            total_price = (
+                self.price * (cny_rate + admin_settings.cny_rate_syrcharge)
+                + admin_settings.additional_control
+            )
 
         get_kilos = KILO_MAPPER.get(category, 1)
         total_price += get_kilos * admin_settings.kilo_delivery
