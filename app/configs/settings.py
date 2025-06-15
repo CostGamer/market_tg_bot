@@ -54,6 +54,11 @@ class OtherSettings(BaseModel):
     cb_rf_url: str = Field(
         default="https://www.cbr-xml-daily.ru/daily_json.js", alias="CB_RF_URL"
     )
+    admin_ids: str = Field(default="497390436", alias="ADMIN_USER_IDS")
+
+    @property
+    def list_of_admin_ids(self) -> list[int]:
+        return list(map(int, self.admin_ids.split(",")))
 
 
 class Settings(BaseModel):

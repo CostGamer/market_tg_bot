@@ -1,40 +1,41 @@
-from app.configs import settings
+from app.configs import all_settings
 import aiohttp
+from app.repositories import AdminSettingsRepo
 
 from app.configs.mappers import KILO_MAPPER
 
 
 class PriceCalculator:
-    CB_RF_URL = settings.different.cb_rf_url
+    CB_RF_URL = all_settings.different.cb_rf_url
 
-    def __init__(
-        self,
-        price: float,
-    ) -> None:
+    def __init__(self, price: float, admin_settings_repo: AdminSettingsRepo) -> None:
         self.price = price
+        self.admin_settings_repo = admin_settings_repo
 
     async def calculate_price(
         self,
         cny_amount: float,
         category: str,
-        commission_rate: float = 1.1,
-        kilo_delivery: int = 2300,
     ) -> tuple[float, float | None]:
         fee = None
+
+        admin_settings = await self.admin_settings_repo.get_settings()
 
         cny_rate, eur_rate = await self.get_cny_eur_rates()
         check_over_limit = await self.is_over_limit(cny_amount, cny_rate, eur_rate)
 
         if check_over_limit:
             fee = await self.calculate_fee(cny_amount, cny_rate, eur_rate)
-            total_price = (self.price * cny_rate) + fee
+            total_price = (
+                self.price * (cny_rate + admin_settings.cny_rate_syrcharge)
+            ) + fee
         else:
-            total_price = self.price * cny_rate
+            total_price = self.price * (cny_rate + admin_settings.cny_rate_syrcharge)
 
         get_kilos = KILO_MAPPER.get(category, 1)
-        total_price += get_kilos * kilo_delivery
+        total_price += get_kilos * admin_settings.kilo_delivery
 
-        return total_price * commission_rate, fee
+        return total_price * admin_settings.commision_rate, fee
 
     async def get_cny_eur_rates(self) -> tuple[float, float]:
         async with aiohttp.ClientSession() as session:
