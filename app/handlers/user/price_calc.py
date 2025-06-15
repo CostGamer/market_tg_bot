@@ -4,6 +4,8 @@ from app.services import PriceCalculator
 from app.states import CalcOrderStates
 from app.keyboards.categories import get_categories_inline_keyboard
 from aiogram.filters import Command
+from app.repositories import AdminSettingsRepo
+from app.configs import db_connection
 
 price_calc_router = Router()
 
@@ -54,18 +56,19 @@ async def category_selected(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     price = data["price"]
 
-    calc = PriceCalculator(price)
-    total, fee = await calc.calculate_price(price, category=category)
+    async with db_connection.get_session() as session:
+        admin_settings_repo = AdminSettingsRepo(session)
+        calc = PriceCalculator(price, admin_settings_repo)
+        total, fee = await calc.calculate_price(price, category=category)
 
-    fee_str = f"{fee:.2f}" if fee is not None else "нет"
+        fee_str = f"{fee:.2f}" if fee is not None else "нет"
 
-    await callback.message.edit_reply_markup(reply_markup=None)  # type: ignore
-
-    await callback.message.answer(  # type: ignore
-        f"Категория: {category}\n"
-        f"Стоимость в юанях: {price:.2f}\n"
-        f"Пошлина: {fee_str}\n"
-        f"Итого к оплате: {total:.2f}"
-    )
-    await state.clear()
-    await callback.answer()
+        await callback.message.edit_reply_markup(reply_markup=None)  # type: ignore
+        await callback.message.answer(  # type: ignore
+            f"Категория: {category}\n"
+            f"Стоимость в юанях: {price:.2f}\n"
+            f"Пошлина: {fee_str}\n"
+            f"Итого к оплате: {total:.2f}"
+        )
+        await state.clear()
+        await callback.answer()

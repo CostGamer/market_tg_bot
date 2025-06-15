@@ -1,3 +1,5 @@
 from .settings import Settings
+from .database import DatabaseConnection
 
-settings = Settings()
+all_settings = Settings()
+db_connection = DatabaseConnection(all_settings)
