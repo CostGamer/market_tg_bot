@@ -13,10 +13,10 @@ class UserRepo:
     def __init__(self, con: AsyncSession) -> None:
         self._con = con
 
-    async def get_user_info(self, tg_id: int) -> UserPM:
+    async def get_user_info(self, tg_id: int) -> UserPM | None:
         query = select(User).where(User.tg_id == tg_id)
         result = (await self._con.execute(query)).scalar_one_or_none()
-        return UserPM.model_validate(result)
+        return UserPM.model_validate(result) if result else None
 
     async def update_user_info(self, user_data: UserPM) -> UserPM:
         update_data = user_data.model_dump(exclude={"tg_id"}, exclude_unset=True)
