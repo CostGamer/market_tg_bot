@@ -14,4 +14,4 @@ class AddressPM(BaseModel):
 class AddressPMGet(AddressPM):
     model_config = ConfigDict(from_attributes=True, strict=True)
 
-    address_id: uuid.UUID = Field(..., description="address ID in DB")
+    id: uuid.UUID = Field(..., description="address ID in DB")

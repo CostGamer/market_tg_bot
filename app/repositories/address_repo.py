@@ -17,7 +17,9 @@ class AddressRepo:
         query = select(Address).join(User).where(User.tg_id == tg_id)
         result = (await self._con.execute(query)).scalars().all()
         return (
-            [AddressPMGet.model_validate(addr) for addr in result] if result else None
+            [AddressPMGet.model_validate(addr, from_attributes=True) for addr in result]
+            if result
+            else None
         )
 
     async def create_address(
@@ -35,7 +37,7 @@ class AddressRepo:
         result = await self._con.execute(
             insert(Address).values(**insert_data).returning(Address)
         )
-        return AddressPM.model_validate(result.scalar_one())
+        return AddressPM.model_validate(result.scalar_one(), from_attributes=True)
 
     async def update_address(
         self, address_id: int, address_data: AddressPM
@@ -48,7 +50,11 @@ class AddressRepo:
             .values(**update_data)
             .returning(Address)
         )
-        return AddressPM.model_validate(result.scalar_one()) if result else None
+        return (
+            AddressPM.model_validate(result.scalar_one(), from_attributes=True)
+            if result
+            else None
+        )
 
     async def delete_address(self, address_id: int) -> bool:
         result = await self._con.execute(

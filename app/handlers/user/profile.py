@@ -1,9 +1,9 @@
 from aiogram import Router, types, F
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from app.repositories import UserRepo
 from app.configs import db_connection
 from app.keyboards import get_profile_keyboard, get_edit_profile_keyboard
-from aiogram.fsm.context import FSMContext
 from app.states import ProfileStates
 from app.utils import is_valid_phone
 from app.services import ProfileService
@@ -27,15 +27,19 @@ async def start_edit_profile(callback: types.CallbackQuery, state: FSMContext):
     async with db_connection.get_session() as session:
         service = ProfileService(UserRepo(session))
         user = await service.get_user(callback.from_user.id)
+        profile_text = service.render_profile(user)
         if not await service.is_profile_complete(user):
             await callback.message.edit_reply_markup()  # type: ignore
-            await callback.message.answer("📝 Введите ваше имя:")  # type: ignore
+            await callback.message.edit_text(  # type: ignore
+                f"{profile_text}\n\n📝 Введите ваше имя:", parse_mode="HTML"
+            )
             await state.set_state(ProfileStates.waiting_for_name)
         else:
             await callback.message.edit_reply_markup()  # type: ignore
-            await callback.message.answer(  # type: ignore
-                "✏️ Выберите что хотите изменить:",
+            await callback.message.edit_text(  # type: ignore
+                f"{profile_text}\n\n✏️ Выберите что хотите изменить:",
                 reply_markup=get_edit_profile_keyboard(),
+                parse_mode="HTML",
             )
 
 
@@ -44,10 +48,14 @@ async def handle_edit_choice(callback: types.CallbackQuery, state: FSMContext):
     action = callback.data.split("_")[1]  # type: ignore
     await callback.message.edit_reply_markup()  # type: ignore
     if action == "name":
-        await callback.message.answer("📝 Введите новое имя:")  # type: ignore
+        await callback.message.answer(  # type: ignore
+            "📝 Введите новое имя:", parse_mode="HTML"
+        )
         await state.set_state(ProfileStates.waiting_for_name)
     elif action == "phone":
-        await callback.message.answer("📱 Введите новый телефон:")  # type: ignore
+        await callback.message.answer(  # type: ignore
+            "📱 Введите новый телефон:", parse_mode="HTML"
+        )
         await state.set_state(ProfileStates.waiting_for_phone)
 
 
@@ -71,7 +79,7 @@ async def set_name(message: types.Message, state: FSMContext):
             await state.clear()
         else:
             await state.update_data(name=name)
-            await message.answer("📱 Теперь введите ваш телефон:")
+            await message.answer("📱 Теперь введите ваш телефон:", parse_mode="HTML")
             await state.set_state(ProfileStates.waiting_for_phone)
 
 
@@ -81,7 +89,7 @@ async def set_phone(message: types.Message, state: FSMContext):
     if not is_valid_phone(phone):
         await message.answer(
             "❌ Некорректный формат телефона!\n"
-            "Примеры правильных форматов:\n"
+            "Примеры:\n"
             "<code>+79261234567</code>\n"
             "<code>89261234567</code>",
             parse_mode="HTML",
@@ -118,6 +126,6 @@ async def cancel_edit(callback: types.CallbackQuery, state: FSMContext):
         user = await service.get_user(callback.from_user.id)
         text = service.render_profile(user)
         await callback.message.edit_reply_markup()  # type: ignore
-        await callback.message.answer(  # type: ignore
+        await callback.message.edit_text(  # type: ignore
             text, reply_markup=get_profile_keyboard(), parse_mode="HTML"
         )

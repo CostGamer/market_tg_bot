@@ -36,7 +36,8 @@ async def main():
     setup_middlewares(dp)
     setup_handlers(dp)
 
-    await dp.start_polling(bot)
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
 
 
 if __name__ == "__main__":
