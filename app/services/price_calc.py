@@ -1,21 +1,22 @@
+from logging import getLogger
 from app.configs import all_settings
-import aiohttp
 from app.repositories import AdminSettingsRepo
-
+from app.services.common_service import CommonService
 from app.configs.mappers import KILO_MAPPER
 
 
-class PriceCalculator:
+logger = getLogger(__name__)
+
+
+class PriceCalculator(CommonService):
     CB_RF_URL = all_settings.different.cb_rf_url
 
     def __init__(self, price: float, admin_settings_repo: AdminSettingsRepo) -> None:
+        super().__init__(admin_settings_repo)
         self.price = price
-        self.admin_settings_repo = admin_settings_repo
 
     async def calculate_price(
-        self,
-        cny_amount: float,
-        category: str,
+        self, cny_amount: float, category: str, subcategory: str | None = None
     ) -> tuple[float, float | None]:
         fee = None
 
@@ -27,23 +28,23 @@ class PriceCalculator:
         if check_over_limit:
             fee = await self.calculate_fee(cny_amount, cny_rate, eur_rate)
             total_price = (
-                self.price * (cny_rate + admin_settings.cny_rate_syrcharge)
-            ) + fee
+                (self.price * (cny_rate + admin_settings.cny_rate_syrcharge))
+                + fee
+                + admin_settings.additional_control
+            )
         else:
-            total_price = self.price * (cny_rate + admin_settings.cny_rate_syrcharge)
+            total_price = (
+                self.price * (cny_rate + admin_settings.cny_rate_syrcharge)
+                + admin_settings.additional_control
+            )
 
-        get_kilos = KILO_MAPPER.get(category, 1)
+        if subcategory:
+            get_kilos = KILO_MAPPER[category][subcategory]
+        else:
+            get_kilos = KILO_MAPPER[category]
+
         total_price += get_kilos * admin_settings.kilo_delivery
-
         return total_price * admin_settings.commision_rate, fee
-
-    async def get_cny_eur_rates(self) -> tuple[float, float]:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self.CB_RF_URL) as resp:
-                data = await resp.json(content_type=None)
-                cny = data["Valute"]["CNY"]["Value"]
-                eur = data["Valute"]["EUR"]["Value"]
-                return float(cny), float(eur)
 
     async def is_over_limit(
         self,

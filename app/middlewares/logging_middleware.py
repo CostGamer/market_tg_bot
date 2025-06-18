@@ -16,11 +16,11 @@ class LoggerMiddleware(BaseMiddleware):
         data: Dict[str, Any],
     ) -> Any:
         start_time = time.time()
-        user_id = (
-            getattr(event.from_user, "id", None)
-            if hasattr(event, "from_user")
-            else None
-        )
+
+        user_id = None
+        if hasattr(event, "from_user") and event.from_user is not None:
+            user_id = event.from_user.id
+
         try:
             result = await handler(event, data)
             duration = f"{time.time() - start_time:.3f}s"

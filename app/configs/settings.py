@@ -29,8 +29,8 @@ class PostgresSettings(BaseModel):
     user: str = Field(default="user", alias="POSTGRES_USER")
     password: str = Field(default="my_password", alias="POSTGRES_PASSWORD")
     db_name: str = Field(default="my_database", alias="POSTGRES_DB")
-    pool_size: int = Field(default=10, alias="DB_POOL_SIZE")
-    max_overflow: int = Field(default=10, alias="DB_MAX_OVERFLOW")
+    pool_size: int = Field(default=500, alias="DB_POOL_SIZE")
+    max_overflow: int = Field(default=500, alias="DB_MAX_OVERFLOW")
 
     @property
     def db_uri(self) -> str:
@@ -46,6 +46,13 @@ class LoggingSettings(BaseModel):
     )
 
 
+class RedisSettings(BaseModel):
+    redis_host: str = Field(default="localhost", alias="REDIS_HOST")
+    redis_port: int = Field(default=6379, alias="REDIS_PORT")
+    redis_db: int = Field(default=0, alias="REDIS_DB")
+    redis_max_conn: int = Field(default=1000, alias="REDIS_MAX_CONN")
+
+
 class TGSettings(BaseModel):
     bot_token: str = Field(default="your_bot_token_here", alias="TG_BOT_TOKEN")
 
@@ -55,6 +62,7 @@ class OtherSettings(BaseModel):
         default="https://www.cbr-xml-daily.ru/daily_json.js", alias="CB_RF_URL"
     )
     admin_ids: str = Field(default="497390436", alias="ADMIN_USER_IDS")
+    support_group_id: str = Field(alias="SUPPORT_GROUP_ID")
 
     @property
     def list_of_admin_ids(self) -> list[int]:
@@ -66,3 +74,4 @@ class Settings(BaseModel):
     logging: LoggingSettings = Field(default_factory=lambda: LoggingSettings(**env))
     tg: TGSettings = Field(default_factory=lambda: TGSettings(**env))
     different: OtherSettings = Field(default_factory=lambda: OtherSettings(**env))
+    redis: RedisSettings = Field(default_factory=lambda: RedisSettings(**env))
