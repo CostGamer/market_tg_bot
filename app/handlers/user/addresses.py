@@ -101,18 +101,9 @@ async def address_name(message: types.Message, state: FSMContext):
     await state.clear()
 
 
-# ВАЖНО: Более специфичные обработчики должны идти первыми!
-
-
 @addresses_router.callback_query(F.data.startswith("edit_address_"))
 async def handle_edit_address(callback: types.CallbackQuery, state: FSMContext):
-    logger.info(
-        f"handle_edit_address: user_id={callback.from_user.id}, callback_data={callback.data}"
-    )
-    # UUID содержит тире, поэтому split("_")[-1] неправильно
-    # Правильно: убираем префикс "edit_address_"
     address_id = callback.data.replace("edit_address_", "")
-    logger.info(f"handle_edit_address: extracted address_id={address_id}")
     await state.update_data(address_id=address_id)
     await callback.answer()
     await callback.message.edit_text(
@@ -124,16 +115,9 @@ async def handle_edit_address(callback: types.CallbackQuery, state: FSMContext):
 
 @addresses_router.callback_query(F.data.startswith("edit_field_"))
 async def handle_edit_field_choice(callback: types.CallbackQuery, state: FSMContext):
-    logger.info(
-        f"handle_edit_field_choice: user_id={callback.from_user.id}, callback_data={callback.data}"
-    )
     parts = callback.data.split("_")
     field_name = parts[2]
-    # UUID может содержать тире, поэтому берем все после "edit_field_{field_name}_"
     address_id = callback.data.replace(f"edit_field_{field_name}_", "")
-    logger.info(
-        f"handle_edit_field_choice: field={field_name}, address_id={address_id}"
-    )
     await state.update_data(address_id=address_id, field=field_name)
     field_translation = {
         "name": "название",
@@ -203,7 +187,6 @@ async def handle_edit_field_input(message: types.Message, state: FSMContext):
 
 @addresses_router.callback_query(F.data.startswith("delete_address_"))
 async def handle_delete_address(callback: types.CallbackQuery, state: FSMContext):
-    # UUID содержит тире, поэтому правильно убираем префикс
     address_id = callback.data.replace("delete_address_", "")
     async with db_connection.get_session() as session:
         address_repo = AddressRepo(session)
@@ -219,19 +202,13 @@ async def handle_delete_address(callback: types.CallbackQuery, state: FSMContext
             await callback.answer("❌ Адрес не найден!")
 
 
-# Этот обработчик должен быть после всех более специфичных
 @addresses_router.callback_query(F.data.startswith("address_"))
 async def handle_address_detail(callback: types.CallbackQuery, state: FSMContext):
-    logger.info(
-        f"handle_address_detail: user_id={callback.from_user.id}, callback_data={callback.data}"
-    )
     address_id = callback.data.split("_")[1]
     async with db_connection.get_session() as session:
         address_repo = AddressRepo(session)
         addresses = await address_repo.get_user_addresses(callback.from_user.id)
-        logger.info(f"handle_address_detail: addresses={addresses}")
         address = next((a for a in addresses if str(a.id) == address_id), None)
-        logger.info(f"handle_address_detail: found address={address}")
         if address:
             text = (
                 f"<b>Адрес:</b>\n"

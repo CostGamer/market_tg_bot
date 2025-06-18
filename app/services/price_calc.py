@@ -1,7 +1,11 @@
+from logging import getLogger
 from app.configs import all_settings
 from app.repositories import AdminSettingsRepo
 from app.services.common_service import CommonService
 from app.configs.mappers import KILO_MAPPER
+
+
+logger = getLogger(__name__)
 
 
 class PriceCalculator(CommonService):
@@ -12,9 +16,7 @@ class PriceCalculator(CommonService):
         self.price = price
 
     async def calculate_price(
-        self,
-        cny_amount: float,
-        category: str,
+        self, cny_amount: float, category: str, subcategory: str | None = None
     ) -> tuple[float, float | None]:
         fee = None
 
@@ -36,9 +38,12 @@ class PriceCalculator(CommonService):
                 + admin_settings.additional_control
             )
 
-        get_kilos = KILO_MAPPER.get(category, 1)
-        total_price += get_kilos * admin_settings.kilo_delivery
+        if subcategory:
+            get_kilos = KILO_MAPPER[category][subcategory]
+        else:
+            get_kilos = KILO_MAPPER[category]
 
+        total_price += get_kilos * admin_settings.kilo_delivery
         return total_price * admin_settings.commision_rate, fee
 
     async def is_over_limit(

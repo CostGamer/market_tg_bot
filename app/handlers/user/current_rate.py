@@ -15,5 +15,5 @@ async def show_current_rate(message: types.Message):
         cny_rate = await current_rate_service.current_rate()
 
     await message.answer(
-        f"Текущий курс юаня: <b>{cny_rate:.2f} ₽</b> руб.", parse_mode="HTML"
+        f"Текущий курс юаня: <b>{cny_rate:.2f}</b> руб.", parse_mode="HTML"
     )

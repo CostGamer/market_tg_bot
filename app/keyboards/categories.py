@@ -1,48 +1,31 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-CATEGORIES = [
-    "Обувь",
-    "Худи",
-    "Куртка Весна",
-    "Куртка Зима",
-    "Футболка/Рубашка/Поло",
-    "Штаны/Джинсы/Шорты",
-    "Аксессуары",
-    "Головные уборы",
-    "Платья",
-    "Юбки",
-    "Костюмы",
-    "Спортивная одежда",
-]
-
-ITEMS_PER_PAGE = 6
+from app.configs.mappers import KILO_MAPPER, SUBCATEGORY_NAMES, MAIN_CATEGORY_NAMES
 
 
-def get_categories_inline_keyboard(page: int = 0) -> InlineKeyboardMarkup:
-    start = page * ITEMS_PER_PAGE
-    end = start + ITEMS_PER_PAGE
-    page_categories = CATEGORIES[start:end]
+def get_main_categories_keyboard() -> InlineKeyboardMarkup:
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=MAIN_CATEGORY_NAMES[cat_id], callback_data=f"maincat_{cat_id}"
+            )
+        ]
+        for cat_id in KILO_MAPPER.keys()
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    keyboard = []
-    row = []
-    for idx, cat in enumerate(page_categories, 1):
-        row.append(InlineKeyboardButton(text=cat, callback_data=f"cat_{cat}"))
-        if idx % 2 == 0:
-            keyboard.append(row)
-            row = []
-    if row:
-        keyboard.append(row)
 
-    nav_buttons = []
-    if page > 0:
-        nav_buttons.append(
-            InlineKeyboardButton(text="←", callback_data=f"cat_page_{page-1}")
-        )
-    if end < len(CATEGORIES):
-        nav_buttons.append(
-            InlineKeyboardButton(text="→", callback_data=f"cat_page_{page+1}")
-        )
-    if nav_buttons:
-        keyboard.append(nav_buttons)
-
-    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+def get_subcategories_keyboard(main_cat_id: str) -> InlineKeyboardMarkup | None:
+    subcats = KILO_MAPPER[main_cat_id]
+    if isinstance(subcats, int):
+        return None
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=SUBCATEGORY_NAMES[main_cat_id][sub_id],
+                callback_data=f"subcat_{main_cat_id}_{sub_id}",
+            )
+        ]
+        for sub_id in subcats.keys()
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -20,3 +20,4 @@ class AdminSettings(Base):
     )
     user_tg_id: Mapped[int] = mapped_column(nullable=False, unique=True)
     additional_control: Mapped[int] = mapped_column(nullable=False)
+    faq: Mapped[str] = mapped_column(nullable=True)

@@ -1,4 +1,4 @@
-from .admin_settings import AdminSettingsPM
+from .admin_settings import AdminSettingsPM, AdminSettingsPMUpdate
 from .user import UserPM
 from .address import AddressPM, AddressPMGet
 
@@ -7,4 +7,5 @@ __all__ = [
     "UserPM",
     "AddressPM",
     "AddressPMGet",
+    "AdminSettingsPMUpdate",
 ]

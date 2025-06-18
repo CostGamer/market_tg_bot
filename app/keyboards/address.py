@@ -19,7 +19,6 @@ def get_addresses_keyboard(addresses):
 
 
 def get_address_manage_keyboard(address_id) -> InlineKeyboardMarkup:
-    # Принудительно преобразуем в строку
     address_id = str(address_id)
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -39,7 +38,6 @@ def get_address_manage_keyboard(address_id) -> InlineKeyboardMarkup:
 
 
 def get_edit_address_field_keyboard(address_id):
-    # Принудительно преобразуем в строку
     address_id = str(address_id)
     return InlineKeyboardMarkup(
         inline_keyboard=[

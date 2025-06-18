@@ -1,4 +1,3 @@
-import uuid
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -14,4 +13,4 @@ class AddressPM(BaseModel):
 class AddressPMGet(AddressPM):
     model_config = ConfigDict(from_attributes=True, strict=True)
 
-    id: uuid.UUID = Field(..., description="address ID in DB")
+    id: int = Field(..., description="address ID in DB")

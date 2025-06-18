@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict
 
 
-class AdminSettingsPM(BaseModel):
+class AdminSettingsPMUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True, strict=True)
 
     commision_rate: float = Field(..., description="Commission rate for transactions")
@@ -11,3 +11,9 @@ class AdminSettingsPM(BaseModel):
     additional_control: int = Field(
         ..., description="additional control on shipping company side"
     )
+
+
+class AdminSettingsPM(AdminSettingsPMUpdate):
+    model_config = ConfigDict(from_attributes=True, strict=True)
+
+    faq: str = Field(..., description="Frequent asked questions")
