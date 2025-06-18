@@ -2,11 +2,11 @@ from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from app.repositories import AdminSettingsRepo
-from app.configs import db_connection
+from app.repositories import AdminSettingsRepo, UserRepo
+from app.configs import db_connection, all_settings
 from app.keyboards.support import get_support_faq_keyboard
 from app.states import SupportStates
-from app.configs import all_settings
+from app.services import ProfileService
 from app.utils import is_valid_phone
 
 support_router = Router()
@@ -38,6 +38,54 @@ async def after_faq_confirmation(message: types.Message, state: FSMContext):
         )
         await state.clear()
     elif "нет" in text:
+        async with db_connection.get_session() as session:
+            service = ProfileService(UserRepo(session))
+            user = await service.get_user(message.from_user.id)  # type: ignore
+            username = user.tg_username if user and user.tg_username else None
+            phone = user.phone if user and user.phone else None
+
+        if username and phone:
+            confirm_kb = ReplyKeyboardMarkup(
+                keyboard=[
+                    [KeyboardButton(text="✅ Всё верно")],
+                    [KeyboardButton(text="✏️ Изменить данные")],
+                ],
+                resize_keyboard=True,
+                one_time_keyboard=True,
+            )
+            await state.update_data(username=username, phone=phone)
+            await message.answer(
+                f"Ваши данные для обращения в поддержку:\n"
+                f"Username: {username}\n"
+                f"Телефон: {phone}\n\n"
+                f"Если всё верно — подтвердите, либо выберите изменение.",
+                reply_markup=confirm_kb,
+            )
+            await state.set_state(SupportStates.waiting_for_profile_confirm)
+        else:
+            skip_kb = ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="Пропустить")]],
+                resize_keyboard=True,
+                one_time_keyboard=True,
+            )
+            await message.answer(
+                "Пожалуйста, введите ваш username (например, @username) или нажмите «Пропустить»:",
+                reply_markup=skip_kb,
+            )
+            await state.set_state(SupportStates.waiting_for_username)
+    else:
+        await message.answer("Пожалуйста, выберите вариант на клавиатуре.")
+
+
+@support_router.message(SupportStates.waiting_for_profile_confirm)
+async def profile_confirm(message: types.Message, state: FSMContext):
+    text = message.text.strip().lower()  # type: ignore
+    if "верно" in text:
+        await message.answer(
+            "Опишите ваш вопрос или проблему:", reply_markup=ReplyKeyboardRemove()
+        )
+        await state.set_state(SupportStates.waiting_for_question)
+    elif "изменить" in text:
         skip_kb = ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="Пропустить")]],
             resize_keyboard=True,
@@ -55,7 +103,7 @@ async def after_faq_confirmation(message: types.Message, state: FSMContext):
 @support_router.message(SupportStates.waiting_for_username, F.text)
 async def get_support_username(message: types.Message, state: FSMContext):
     username = message.text.strip()  # type: ignore
-    if username.lower() in {"-", "пропустить"}:  # type: ignore
+    if username.lower() in {"-", "пропустить"}:
         username = "не указан"
     elif not username.startswith("@") or len(username) < 3:
         await message.answer(
