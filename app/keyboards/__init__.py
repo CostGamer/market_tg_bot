@@ -6,6 +6,7 @@ from .address import (
     get_edit_address_field_keyboard,
 )
 from .support import get_support_faq_keyboard
+from .order import get_quantity_keyboard, get_send_order_keyboard, get_yes_no_keyboard
 
 __all__ = [
     "get_profile_keyboard",
@@ -14,6 +15,9 @@ __all__ = [
     "get_addresses_keyboard",
     "get_edit_address_field_keyboard",
     "get_main_categories_keyboard",
+    "get_quantity_keyboard",
+    "get_send_order_keyboard",
+    "get_yes_no_keyboard",
     "get_subcategories_keyboard",
     "get_support_faq_keyboard",
 ]

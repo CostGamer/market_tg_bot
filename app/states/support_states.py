@@ -6,3 +6,4 @@ class SupportStates(StatesGroup):
     waiting_for_username = State()
     waiting_for_phone = State()
     waiting_for_question = State()
+    waiting_for_profile_confirm = State()

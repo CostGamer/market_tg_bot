@@ -28,4 +28,7 @@ def get_subcategories_keyboard(main_cat_id: str) -> InlineKeyboardMarkup | None:
         ]
         for sub_id in subcats.keys()
     ]
+    buttons.append(
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main_categories")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=buttons)

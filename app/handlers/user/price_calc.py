@@ -88,3 +88,12 @@ async def finish_calc(callback, state, main_cat_id, sub_id):
     )
     await state.clear()
     await callback.answer()
+
+
+@price_calc_router.callback_query(
+    CalcOrderStates.waiting_for_subcategory, F.data == "back_to_main_categories"
+)
+async def back_to_main_categories(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_reply_markup(reply_markup=get_main_categories_keyboard())  # type: ignore
+    await state.set_state(CalcOrderStates.waiting_for_main_category)
+    await callback.answer()
