@@ -61,3 +61,8 @@ class AddressRepo:
             delete(Address).where(Address.id == address_id)
         )
         return result.rowcount > 0
+
+    async def get_address_by_id(self, address_id: int) -> AddressPMGet:
+        query = select(Address).where(Address.id == address_id)
+        result = (await self._con.execute(query)).scalar_one()
+        return AddressPMGet.model_validate(result, from_attributes=True)

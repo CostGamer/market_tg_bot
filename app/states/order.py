@@ -19,3 +19,8 @@ class OrderStates(StatesGroup):
     waiting_for_username = State()
     order_review = State()
     waiting_for_admin_comment = State()
+    waiting_for_main_category = State()
+    waiting_for_subcategory = State()
+    waiting_for_admin_comment_text = State()
+    confirm_address = State()
+    confirm_profile = State()
