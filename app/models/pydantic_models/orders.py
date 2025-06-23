@@ -13,6 +13,7 @@ class OrderPMGet(BaseModel):
 class OrderPMPost(OrderPMGet):
     model_config = ConfigDict(from_attributes=True, strict=True)
 
+    id: int | None = Field(None, description="order ID")
     quantity: int = Field(..., description="quantity")
     unit_price: float = Field(..., description="price per unit")
     photo_url: str = Field(..., description="telegram URL photo")
