@@ -98,3 +98,13 @@ SUBCATEGORY_NAMES = {
         "other_sport": "Прочее",
     },
 }
+
+
+class OrderStatus:
+    NEW = "Новый"
+    APPROVE_PAID = "Оплачен"
+    ACCEPT_BY_SHIPPING = "На складе"
+    DELIVERING = "Доставляется"
+    READY_TO_GET = "Ожидает получения"
+    CLOSED = "Доставлен"
+    CANCELLED = "отменен"

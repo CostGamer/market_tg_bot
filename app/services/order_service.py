@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional
 from app.repositories import OrderRepo, AdminSettingsRepo
 from app.models.pydantic_models import OrderPMPost, UserPM
 from app.services import PriceCalculator
-from app.configs.mappers import MAIN_CATEGORY_NAMES, SUBCATEGORY_NAMES
+from app.configs.mappers import MAIN_CATEGORY_NAMES, SUBCATEGORY_NAMES, OrderStatus
 from aiogram import Bot
 from app.configs import all_settings
 
@@ -17,9 +17,10 @@ class OrderService:
     ) -> tuple[bool, Optional[str]]:
         if not user or not user.phone or not user.tg_username:
             error_msg = (
-                "❗️ Для оформления заказа необходимо заполнить профиль.\n\n"
+                "❗️ Для оформления заказа необходимо заполнить профиль и адрес.\n\n"
                 "1. Используйте команду /profile для заполнения телефона и username\n"
-                "2. После этого снова отправьте /order"
+                "2. Используйте команду /addresses для добавления адреса\n"
+                "3. После этого снова отправьте /order"
             )
             return False, error_msg
 
@@ -84,11 +85,11 @@ class OrderService:
         )
 
     def prepare_order_data(self, data: Dict[str, Any], user_id: int) -> OrderPMPost:
-        return OrderPMPost(
+        return OrderPMPost(  # type: ignore
             description=data["description"],
             product_url=data["product_url"],
             final_price=float(data["unit_price"]) * int(data["quantity"]),
-            status="новый",
+            status=OrderStatus.NEW,
             quantity=int(data["quantity"]),
             unit_price=float(data["unit_price"]),
             photo_url=data["photo_url"],
@@ -152,7 +153,7 @@ class OrderService:
         if created_order:
             await self.send_admin_notification(bot, created_order, data)
 
-            success_message = (
+            success_message = (  # type: ignore
                 "✅ Заказ успешно оформлен и отправлен на обработку!\n\n"
                 "Администратор свяжется с вами в ближайшее время."
             )

@@ -16,9 +16,7 @@ from app.keyboards import (
     get_cancel_keyboard,
 )
 from app.states import OrderStates
-from app.services import ProfileService
-from app.services.order_service import OrderService
-from app.services.category_helper import CategoryHelper
+from app.services import ProfileService, OrderService, CategoryHelper
 from app.utils import is_valid_url
 
 logger = logging.getLogger(__name__)
