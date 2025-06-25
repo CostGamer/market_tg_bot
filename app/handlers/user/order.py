@@ -59,15 +59,22 @@ async def start_order(message: types.Message, state: FSMContext):
         )
 
         profile_text = (
-            "👤 **Ваши данные для заказа:**\n\n"
-            f"📱 **Телефон:** {user.phone}\n"  # type: ignore
-            f"👤 **Username:** @{user.tg_username}\n\n"  # type: ignore
+            "👤 <b>Ваши данные для заказа:</b>\n\n"
+            f"📱 <b>Телефон:</b> {user.phone}\n"  # type: ignore
+        )
+
+        if user.tg_username:  # type: ignore
+            profile_text += f"👤 <b>Username:</b> @{user.tg_username}\n\n"  # type: ignore
+        else:
+            profile_text += "👤 <b>Username:</b> не указан\n\n"
+
+        profile_text += (
             "Если данные неверны, отмените оформление заказа и используйте /profile для редактирования.\n\n"
             "Всё верно?"
         )
 
         await message.answer(
-            profile_text, reply_markup=get_yes_no_keyboard(), parse_mode="Markdown"
+            profile_text, reply_markup=get_yes_no_keyboard(), parse_mode="HTML"
         )
         await state.set_state(OrderStates.confirm_profile)
 
@@ -292,7 +299,7 @@ async def get_price(message: types.Message, state: FSMContext):
     if await check_cancel(message, state):
         return
 
-    valid, price = CategoryHelper.validate_price(message.text)  # type: ignore
+    valid, price_yuan = CategoryHelper.validate_price(message.text)  # type: ignore
 
     if not valid:
         await message.answer(
@@ -301,7 +308,8 @@ async def get_price(message: types.Message, state: FSMContext):
         )
         return
 
-    await state.update_data(unit_price=price)
+    # Сохраняем цену в юанях как unit_price_yuan
+    await state.update_data(unit_price_yuan=price_yuan)
 
     data = await state.get_data()
     main_cat_id = data.get("main_cat_id")
@@ -309,14 +317,15 @@ async def get_price(message: types.Message, state: FSMContext):
 
     async with db_connection.get_session() as session:
         order_service = OrderService(OrderRepo(session), AdminSettingsRepo(session))
-        rub = await order_service.calculate_price_in_rubles(
-            price, main_cat_id, sub_cat_id  # type: ignore
+        price_rub = await order_service.calculate_price_in_rubles(
+            price_yuan, main_cat_id, sub_cat_id  # type: ignore
         )
 
-    await state.update_data(price_rub=rub)
+    # Сохраняем цену в рублях как unit_price_rub
+    await state.update_data(unit_price_rub=price_rub)
 
     await message.answer(
-        f"💴 Вы указали цену: {price} юаней ({rub:.2f} руб).\n\nВсё верно?",
+        f"💴 Вы указали цену: {price_yuan} юаней ({price_rub:.2f} руб).\n\nВсё верно?",
         reply_markup=get_yes_no_keyboard(),
     )
     await state.set_state(OrderStates.confirm_price)
@@ -413,13 +422,13 @@ async def show_order_review(message: types.Message, state: FSMContext):
             photo=photo_url,
             caption=review_text,
             reply_markup=get_comment_or_send_keyboard(),
-            parse_mode="Markdown",
+            parse_mode="HTML",
         )
     else:
         await message.answer(
             review_text,
             reply_markup=get_comment_or_send_keyboard(),
-            parse_mode="Markdown",
+            parse_mode="HTML",
         )
 
     await state.set_state(OrderStates.waiting_for_admin_comment)

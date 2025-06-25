@@ -18,6 +18,7 @@ from .categories_reply import (
     get_main_categories_keyboard_reply,
     get_subcategories_keyboard_reply,
 )
+from .admin_order import create_order_status_keyboard
 
 __all__ = [
     "get_profile_keyboard",
@@ -35,5 +36,6 @@ __all__ = [
     "get_main_categories_keyboard_reply",
     "get_addresses_keyboard_order",
     "get_cancel_keyboard",
+    "create_order_status_keyboard",
     "get_subcategories_keyboard_reply",
 ]

@@ -3,6 +3,9 @@ from .current_rate import CurrentRate
 from .category_helper import CategoryHelper
 from .profile_service import ProfileService
 from .order_service import OrderService
+from .notification_service import NotificationService
+from .order_admin_service import OrderAdminService
+from .order_history import OrderHistoryService
 
 __all__ = [
     "PriceCalculator",
@@ -10,4 +13,7 @@ __all__ = [
     "ProfileService",
     "CategoryHelper",
     "OrderService",
+    "NotificationService",
+    "OrderAdminService",
+    "OrderHistoryService",
 ]

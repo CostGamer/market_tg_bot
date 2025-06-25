@@ -103,6 +103,7 @@ SUBCATEGORY_NAMES = {
 class OrderStatus:
     NEW = "Новый"
     APPROVE_PAID = "Оплачен"
+    COMING_TO_SHIPPING = "Едет на склад"
     ACCEPT_BY_SHIPPING = "На складе"
     DELIVERING = "Доставляется"
     READY_TO_GET = "Ожидает получения"
