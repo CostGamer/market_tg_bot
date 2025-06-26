@@ -1,12 +1,19 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-def get_support_faq_keyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="✅ Да, нашёл ответ")],
-            [KeyboardButton(text="❌ Нет, хочу написать в поддержку")],
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=True,
+def get_support_faq_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Да, нашёл ответ", callback_data="faq_found"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❌ Нет, хочу написать в поддержку",
+                    callback_data="faq_not_found",
+                )
+            ],
+        ]
     )

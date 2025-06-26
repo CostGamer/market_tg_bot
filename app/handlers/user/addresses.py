@@ -1,239 +1,353 @@
-from logging import getLogger
-from aiogram import Router, types, F
+from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from app.repositories import AddressRepo
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from app.repositories import AddressRepo, UserRepo
 from app.configs import db_connection
 from app.keyboards import (
     get_addresses_keyboard,
+    get_profile_keyboard,
     get_address_manage_keyboard,
-    get_edit_address_field_keyboard,
+    get_confirmation_keyboard,
 )
-from app.states import AddressStates
+from app.states import AddressStates, ProfileStates
 from app.models.pydantic_models import AddressPM
-
-logger = getLogger(__name__)
+from app.services import ProfileService
 
 addresses_router = Router()
+
+MAX_ADDRESSES = 3
 
 
 @addresses_router.message(Command("addresses"))
 async def show_addresses_command(message: types.Message, state: FSMContext):
     async with db_connection.get_session() as session:
         address_repo = AddressRepo(session)
-        addresses = await address_repo.get_user_addresses(message.from_user.id)
+        addresses = await address_repo.get_user_addresses(message.from_user.id)  # type: ignore
         keyboard = get_addresses_keyboard(addresses)
-        await message.answer(
-            "🏠 Ваши адреса:", reply_markup=keyboard, parse_mode="HTML"
-        )
+
+        if len(addresses) == 0:  # type: ignore
+            text = "📭 У вас пока нет сохранённых адресов"
+        else:
+            text = f"🏠 Ваши адреса ({len(addresses)}/{MAX_ADDRESSES}):"  # type: ignore
+
+        await message.answer(text, reply_markup=keyboard)
+    await state.set_state(AddressStates.choosing_address)
 
 
-@addresses_router.callback_query(F.data == "add_address")
-async def handle_add_address(callback: types.CallbackQuery, state: FSMContext):
+@addresses_router.callback_query(AddressStates.choosing_address)
+async def choose_address(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
-    await callback.message.answer("🏙️ Введите город пункта выдачи:")
-    await state.set_state(AddressStates.waiting_for_city)
+
+    if callback.data == "add_address":
+        # Проверяем лимит адресов
+        async with db_connection.get_session() as session:
+            address_repo = AddressRepo(session)
+            addresses = await address_repo.get_user_addresses(callback.from_user.id)
+
+            if len(addresses) >= MAX_ADDRESSES:  # type: ignore
+                await callback.message.edit_text(  # type: ignore
+                    f"⚠️ Достигнут лимит адресов!\n\n"
+                    f"Вы можете иметь максимум {MAX_ADDRESSES} адресов. "
+                    f"Удалите один из существующих адресов, чтобы добавить новый.",
+                    reply_markup=InlineKeyboardMarkup(
+                        inline_keyboard=[
+                            [
+                                InlineKeyboardButton(
+                                    text="⬅️ Назад к списку",
+                                    callback_data="back_to_list",
+                                )
+                            ]
+                        ]
+                    ),
+                )
+                return
+
+            profile_service = ProfileService(UserRepo(session))
+            user = await profile_service.get_user(callback.from_user.id)
+            if not user or not user.name or not user.phone:
+                await callback.message.edit_text(  # type: ignore
+                    "⚠️ Перед добавлением адреса заполните профиль.\n"
+                    "А затем заново выполните команду /addresses",
+                    reply_markup=get_profile_keyboard(),
+                )
+                await callback.message.answer("📝 Введите ваше имя:")  # type: ignore
+                await state.set_state(ProfileStates.waiting_for_name)
+                return
+
+        await callback.message.edit_text("🏙️ Введите город пункта выдачи:")  # type: ignore
+        await state.set_state(AddressStates.waiting_for_city)
+        return
+
+    if callback.data == "back_to_list":
+        async with db_connection.get_session() as session:
+            address_repo = AddressRepo(session)
+            addresses = await address_repo.get_user_addresses(callback.from_user.id)
+            keyboard = get_addresses_keyboard(addresses)
+
+            if len(addresses) == 0:  # type: ignore
+                text = "📭 У вас пока нет сохранённых адресов"
+            else:
+                text = f"🏠 Ваши адреса ({len(addresses)}/{MAX_ADDRESSES}):"  # type: ignore
+
+            await callback.message.edit_text(text, reply_markup=keyboard)  # type: ignore
+            await state.set_state(AddressStates.choosing_address)
+        return
+
+    if callback.data.startswith("address_"):  # type: ignore
+        address_id = int(callback.data.split("_")[1])  # type: ignore
+        async with db_connection.get_session() as session:
+            address_repo = AddressRepo(session)
+            addresses = await address_repo.get_user_addresses(callback.from_user.id)
+            address = next((a for a in addresses if a.id == address_id), None)  # type: ignore
+            if address:
+                await state.update_data(selected_address_id=address.id)
+                keyboard = get_address_manage_keyboard()
+                await callback.message.edit_text(  # type: ignore
+                    f"📍 <b>Выбранный адрес:</b>\n\n"
+                    f"🏙️ <b>Город:</b> {address.city}\n"
+                    f"🏠 <b>Адрес:</b> {address.address}\n"
+                    f"📮 <b>Индекс:</b> {address.index}\n"
+                    f"🏷️ <b>Название:</b> {address.name}",
+                    reply_markup=keyboard,
+                    parse_mode="HTML",
+                )
+                await state.set_state(AddressStates.manage_address)
+            else:
+                await callback.message.edit_text("❌ Адрес не найден!")  # type: ignore
+
+
+@addresses_router.callback_query(AddressStates.manage_address)
+async def manage_address(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
+    data = await state.get_data()
+    address_id = data.get("selected_address_id")
+
+    if callback.data == "delete_address":
+        async with db_connection.get_session() as session:
+            address_repo = AddressRepo(session)
+            await address_repo.delete_address(address_id)  # type: ignore
+            await callback.message.edit_text("🗑️ Адрес успешно удалён!")  # type: ignore
+            addresses = await address_repo.get_user_addresses(callback.from_user.id)
+            keyboard = get_addresses_keyboard(addresses)
+
+            if len(addresses) == 0:  # type: ignore
+                text = "📭 У вас пока нет сохранённых адресов"
+            else:
+                text = f"🏠 Ваши адреса ({len(addresses)}/{MAX_ADDRESSES}):"  # type: ignore
+
+            await callback.message.edit_text(text, reply_markup=keyboard)  # type: ignore
+            await state.set_state(AddressStates.choosing_address)
+    elif callback.data == "back_to_addresses":
+        async with db_connection.get_session() as session:
+            address_repo = AddressRepo(session)
+            addresses = await address_repo.get_user_addresses(callback.from_user.id)
+            keyboard = get_addresses_keyboard(addresses)
+
+            if len(addresses) == 0:  # type: ignore
+                text = "📭 У вас пока нет сохранённых адресов"
+            else:
+                text = f"🏠 Ваши адреса ({len(addresses)}/{MAX_ADDRESSES}):"  # type: ignore
+
+            await callback.message.edit_text(text, reply_markup=keyboard)  # type: ignore
+            await state.set_state(AddressStates.choosing_address)
 
 
 @addresses_router.message(AddressStates.waiting_for_city)
 async def address_city(message: types.Message, state: FSMContext):
-    city = message.text.strip()
+    city = message.text.strip()  # type: ignore
     if not city:
-        await message.answer("❌ Город не может быть пустым!")
+        await message.answer("❌ Город не может быть пустым! Попробуйте ещё раз:")
         return
+
     await state.update_data(city=city)
-    await message.answer("🏠 Введите адрес пункта выдачи (улица, дом, офис):")
-    await state.set_state(AddressStates.waiting_for_address)
+    keyboard = get_confirmation_keyboard()
+    await message.answer(
+        f"🏙️ <b>Город:</b> {city}\n\n" f"Всё верно?",
+        reply_markup=keyboard,
+        parse_mode="HTML",
+    )
+    await state.set_state(AddressStates.confirm_city)
+
+
+@addresses_router.callback_query(AddressStates.confirm_city)
+async def confirm_city(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
+
+    if callback.data == "confirm_yes":
+        await callback.message.edit_text(  # type: ignore
+            "🏠 Введите адрес пункта выдачи (улица, дом, офис):"
+        )
+        await state.set_state(AddressStates.waiting_for_address)
+    elif callback.data == "confirm_no":
+        await callback.message.edit_text("🏙️ Введите город пункта выдачи:")  # type: ignore
+        await state.set_state(AddressStates.waiting_for_city)
 
 
 @addresses_router.message(AddressStates.waiting_for_address)
 async def address_address(message: types.Message, state: FSMContext):
-    address = message.text.strip()
+    address = message.text.strip()  # type: ignore
     if not address:
-        await message.answer("❌ Адрес не может быть пустым!")
+        await message.answer("❌ Адрес не может быть пустым! Попробуйте ещё раз:")
         return
+
     await state.update_data(address=address)
-    await message.answer("🏷️ Введите индекс пункта выдачи:")
-    await state.set_state(AddressStates.waiting_for_index)
+    keyboard = get_confirmation_keyboard()
+    await message.answer(
+        f"🏠 <b>Адрес:</b> {address}\n\n" f"Всё верно?",
+        reply_markup=keyboard,
+        parse_mode="HTML",
+    )
+    await state.set_state(AddressStates.confirm_address)
+
+
+@addresses_router.callback_query(AddressStates.confirm_address)
+async def confirm_address(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
+
+    if callback.data == "confirm_yes":
+        await callback.message.edit_text("📮 Введите почтовый индекс (6 цифр):")  # type: ignore
+        await state.set_state(AddressStates.waiting_for_index)
+    elif callback.data == "confirm_no":
+        await callback.message.edit_text(  # type: ignore
+            "🏠 Введите адрес пункта выдачи (улица, дом, офис):"
+        )
+        await state.set_state(AddressStates.waiting_for_address)
 
 
 @addresses_router.message(AddressStates.waiting_for_index)
 async def address_index(message: types.Message, state: FSMContext):
-    index = message.text.strip()
+    index = message.text.strip()  # type: ignore
+
     if not index.isdigit():
-        await message.answer("❌ Индекс должен быть числом!")
+        await message.answer(
+            "❌ Индекс должен состоять только из цифр! Попробуйте ещё раз:"
+        )
         return
+    if len(index) != 6:
+        await message.answer(
+            "❌ Индекс должен содержать ровно 6 цифр! Попробуйте ещё раз:"
+        )
+        return
+    if index == "000000":
+        await message.answer("❌ Введите корректный индекс! Попробуйте ещё раз:")
+        return
+
     await state.update_data(index=int(index))
+    keyboard = get_confirmation_keyboard()
     await message.answer(
-        "🏷️ Введите название пункта выдачи (например, 'Boxberry Центральный'):"
+        f"📮 <b>Индекс:</b> {index}\n\n" f"Всё верно?",
+        reply_markup=keyboard,
+        parse_mode="HTML",
     )
-    await state.set_state(AddressStates.waiting_for_name)
+    await state.set_state(AddressStates.confirm_index)
+
+
+@addresses_router.callback_query(AddressStates.confirm_index)
+async def confirm_index(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
+
+    if callback.data == "confirm_yes":
+        await callback.message.edit_text(  # type: ignore
+            "🏷️ Введите название пункта выдачи\n"
+            "(например: 'Boxberry Центральный', 'СДЭК на Ленина'):"
+        )
+        await state.set_state(AddressStates.waiting_for_name)
+    elif callback.data == "confirm_no":
+        await callback.message.edit_text("📮 Введите почтовый индекс (6 цифр):")  # type: ignore
+        await state.set_state(AddressStates.waiting_for_index)
 
 
 @addresses_router.message(AddressStates.waiting_for_name)
 async def address_name(message: types.Message, state: FSMContext):
-    name = message.text.strip()
+    name = message.text.strip()  # type: ignore
     if not name:
-        await message.answer("❌ Название не может быть пустым!")
+        await message.answer("❌ Название не может быть пустым! Попробуйте ещё раз:")
         return
+
     await state.update_data(name=name)
-    data = await state.get_data()
-    address_data = AddressPM(
-        address=data["address"],
-        city=data["city"],
-        index=data["index"],
-        name=data["name"],
-    )
-    async with db_connection.get_session() as session:
-        address_repo = AddressRepo(session)
-        new_address = await address_repo.create_address(
-            message.from_user.id, address_data
-        )
-        if new_address:
-            await message.answer("✅ Адрес успешно добавлен!")
-            addresses = await address_repo.get_user_addresses(message.from_user.id)
-            keyboard = get_addresses_keyboard(addresses)
-            await message.answer(
-                "🏠 Ваши адреса:", reply_markup=keyboard, parse_mode="HTML"
-            )
-        else:
-            await message.answer("❌ Ошибка при сохранении адреса!")
-    await state.clear()
-
-
-@addresses_router.callback_query(F.data.startswith("edit_address_"))
-async def handle_edit_address(callback: types.CallbackQuery, state: FSMContext):
-    address_id = callback.data.replace("edit_address_", "")
-    await state.update_data(address_id=address_id)
-    await callback.answer()
-    await callback.message.edit_text(
-        "✏️ Выберите что хотите изменить:",
-        reply_markup=get_edit_address_field_keyboard(address_id),
+    keyboard = get_confirmation_keyboard()
+    await message.answer(
+        f"🏷️ <b>Название:</b> {name}\n\n" f"Всё верно?",
+        reply_markup=keyboard,
         parse_mode="HTML",
     )
+    await state.set_state(AddressStates.confirm_name)
 
 
-@addresses_router.callback_query(F.data.startswith("edit_field_"))
-async def handle_edit_field_choice(callback: types.CallbackQuery, state: FSMContext):
-    parts = callback.data.split("_")
-    field_name = parts[2]
-    address_id = callback.data.replace(f"edit_field_{field_name}_", "")
-    await state.update_data(address_id=address_id, field=field_name)
-    field_translation = {
-        "name": "название",
-        "city": "город",
-        "address": "адрес",
-        "index": "индекс",
-    }
+@addresses_router.callback_query(AddressStates.confirm_name)
+async def confirm_name(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
-    await callback.message.answer(f"Введите новое {field_translation[field_name]}:")
-    await state.set_state(AddressStates.waiting_for_edit_field)
+
+    if callback.data == "confirm_yes":
+        data = await state.get_data()
+
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="✅ Сохранить адрес", callback_data="save_address"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Отменить", callback_data="cancel_address"
+                    )
+                ],
+            ]
+        )
+
+        await callback.message.edit_text(  # type: ignore
+            f"📋 <b>Проверьте данные адреса:</b>\n\n"
+            f"🏙️ <b>Город:</b> {data['city']}\n"
+            f"🏠 <b>Адрес:</b> {data['address']}\n"
+            f"📮 <b>Индекс:</b> {data['index']}\n"
+            f"🏷️ <b>Название:</b> {data['name']}\n\n"
+            f"Сохранить этот адрес?",
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
+        await state.set_state(AddressStates.final_confirmation)
+    elif callback.data == "confirm_no":
+        await callback.message.edit_text(  # type: ignore
+            "🏷️ Введите название пункта выдачи\n"
+            "(например: 'Boxberry Центральный', 'СДЭК на Ленина'):"
+        )
+        await state.set_state(AddressStates.waiting_for_name)
 
 
-@addresses_router.message(AddressStates.waiting_for_edit_field)
-async def handle_edit_field_input(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    field = data["field"]
-    address_id = data["address_id"]
-    new_value = message.text.strip()
+@addresses_router.callback_query(AddressStates.final_confirmation)
+async def final_confirmation(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
 
-    if not new_value:
-        await message.answer("❌ Значение не может быть пустым!")
-        return
-
-    if field == "index":
-        if not new_value.isdigit():
-            await message.answer("❌ Индекс должен быть числом!")
-            return
-        new_value = int(new_value)
-
-    async with db_connection.get_session() as session:
-        address_repo = AddressRepo(session)
-
-        # Получаем текущий адрес для создания полной модели
-        addresses = await address_repo.get_user_addresses(message.from_user.id)
-        current_address = next((a for a in addresses if str(a.id) == address_id), None)
-
-        if not current_address:
-            await message.answer("❌ Адрес не найден!")
-            await state.clear()
-            return
-
-        # Создаем полную модель с обновленным полем
+    if callback.data == "save_address":
+        data = await state.get_data()
         address_data = AddressPM(
-            name=current_address.name if field != "name" else new_value,
-            city=current_address.city if field != "city" else new_value,
-            address=current_address.address if field != "address" else new_value,
-            index=current_address.index if field != "index" else new_value,
+            address=data["address"],
+            city=data["city"],
+            index=data["index"],
+            name=data["name"],
         )
 
-        updated = await address_repo.update_address(
-            address_id=address_id, address_data=address_data
-        )
-
-        if updated:
-            await message.answer("✅ Адрес успешно обновлен!")
-            # Показываем обновленный список адресов
-            addresses = await address_repo.get_user_addresses(message.from_user.id)
-            keyboard = get_addresses_keyboard(addresses)
-            await message.answer(
-                "🏠 Ваши адреса:", reply_markup=keyboard, parse_mode="HTML"
+        async with db_connection.get_session() as session:
+            address_repo = AddressRepo(session)
+            new_address = await address_repo.create_address(
+                callback.from_user.id, address_data
             )
-        else:
-            await message.answer("❌ Ошибка при обновлении адреса!")
 
-    await state.clear()
+            if new_address:
+                await callback.message.edit_text("✅ Адрес успешно сохранён!")  # type: ignore
+                addresses = await address_repo.get_user_addresses(callback.from_user.id)
+                keyboard = get_addresses_keyboard(addresses)
 
-
-@addresses_router.callback_query(F.data.startswith("delete_address_"))
-async def handle_delete_address(callback: types.CallbackQuery, state: FSMContext):
-    address_id = callback.data.replace("delete_address_", "")
-    async with db_connection.get_session() as session:
-        address_repo = AddressRepo(session)
-        success = await address_repo.delete_address(address_id)
-        if success:
-            await callback.answer("✅ Адрес удалён!")
-            addresses = await address_repo.get_user_addresses(callback.from_user.id)
-            keyboard = get_addresses_keyboard(addresses)
-            await callback.message.edit_text(
-                "🏠 Ваши адреса:", reply_markup=keyboard, parse_mode="HTML"
-            )
-        else:
-            await callback.answer("❌ Адрес не найден!")
-
-
-@addresses_router.callback_query(F.data.startswith("address_"))
-async def handle_address_detail(callback: types.CallbackQuery, state: FSMContext):
-    address_id = callback.data.split("_")[1]
-    async with db_connection.get_session() as session:
-        address_repo = AddressRepo(session)
-        addresses = await address_repo.get_user_addresses(callback.from_user.id)
-        address = next((a for a in addresses if str(a.id) == address_id), None)
-        if address:
-            text = (
-                f"<b>Адрес:</b>\n"
-                f"Город: {address.city}\n"
-                f"Адрес: {address.address}\n"
-                f"Индекс: {address.index}\n"
-                f"Название: {address.name}"
-            )
-            await callback.answer()
-            await callback.message.edit_text(
-                text,
-                reply_markup=get_address_manage_keyboard(address.id),
-                parse_mode="HTML",
-            )
-        else:
-            await callback.answer("❌ Адрес не найден!")
-
-
-@addresses_router.callback_query(F.data == "profile_addresses")
-async def return_to_addresses(callback: types.CallbackQuery, state: FSMContext):
-    async with db_connection.get_session() as session:
-        address_repo = AddressRepo(session)
-        addresses = await address_repo.get_user_addresses(callback.from_user.id)
-        keyboard = get_addresses_keyboard(addresses)
-        await callback.answer()
-        await callback.message.edit_text(
-            "🏠 Ваши адреса:", reply_markup=keyboard, parse_mode="HTML"
-        )
+                text = f"🏠 Ваши адреса ({len(addresses)}/{MAX_ADDRESSES}):"  # type: ignore
+                await callback.message.answer(text, reply_markup=keyboard)  # type: ignore
+                await state.set_state(AddressStates.choosing_address)
+            else:
+                await callback.message.edit_text(  # type: ignore
+                    "❌ Ошибка при сохранении адреса! Попробуйте ещё раз."
+                )
+                await state.clear()
+    elif callback.data == "cancel_address":
+        await callback.message.edit_text("❌ Добавление адреса отменено.")  # type: ignore
+        await state.clear()

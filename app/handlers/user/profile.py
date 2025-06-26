@@ -30,8 +30,8 @@ async def start_edit_profile(callback: types.CallbackQuery, state: FSMContext):
         profile_text = service.render_profile(user)
         if not await service.is_profile_complete(user):
             await callback.message.edit_reply_markup()  # type: ignore
-            await callback.message.edit_text(  # type: ignore
-                f"{profile_text}\n\n📝 Введите ваше имя:", parse_mode="HTML"
+            await callback.message.answer(  # type: ignore
+                "📝 Введите ваше имя:", parse_mode="HTML"
             )
             await state.set_state(ProfileStates.waiting_for_name)
         else:
