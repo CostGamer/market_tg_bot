@@ -1,33 +1,54 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def get_addresses_keyboard(addresses):
+    """Создает инлайн клавиатуру со списком адресов"""
     keyboard = []
-    if addresses:
-        for addr in addresses:
-            keyboard.append([KeyboardButton(text=addr.name)])
-    keyboard.insert(0, [KeyboardButton(text="➕ Добавить адрес")])
-    return ReplyKeyboardMarkup(
-        keyboard=keyboard, resize_keyboard=True, one_time_keyboard=True
+    for address in addresses:
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=f"📍 {address.name}", callback_data=f"address_{address.id}"
+                )
+            ]
+        )
+    keyboard.append(
+        [InlineKeyboardButton(text="➕ Добавить адрес", callback_data="add_address")]
     )
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_address_manage_keyboard():
-    keyboard = [
-        [KeyboardButton(text="✏️ Изменить"), KeyboardButton(text="🗑️ Удалить")],
-        [KeyboardButton(text="⬅️ Назад")],
-    ]
-    return ReplyKeyboardMarkup(
-        keyboard=keyboard, resize_keyboard=True, one_time_keyboard=True
+    """Создает инлайн клавиатуру для управления адресом (только удаление)"""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🗑️ Удалить адрес", callback_data="delete_address"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ Назад к списку", callback_data="back_to_addresses"
+                )
+            ],
+        ]
     )
 
 
-def get_edit_address_field_keyboard():
-    keyboard = [
-        [KeyboardButton(text="✏️ Имя"), KeyboardButton(text="🏙️ Город")],
-        [KeyboardButton(text="🏠 Адрес"), KeyboardButton(text="🔢 Индекс")],
-        [KeyboardButton(text="❌ Отмена")],
-    ]
-    return ReplyKeyboardMarkup(
-        keyboard=keyboard, resize_keyboard=True, one_time_keyboard=True
+def get_confirmation_keyboard():
+    """Создает инлайн клавиатуру для подтверждения да/нет"""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Да, всё верно", callback_data="confirm_yes"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❌ Нет, ввести заново", callback_data="confirm_no"
+                )
+            ],
+        ]
     )
