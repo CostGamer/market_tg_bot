@@ -24,7 +24,16 @@ order_router = Router()
 
 async def handle_cancel_order(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
-    await callback.message.edit_text("🚫 Оформление заказа отменено.")  # type: ignore
+
+    try:
+        await callback.message.edit_text(  # type: ignore
+            "🚫 Оформление заказа отменено.", reply_markup=None
+        )
+    except Exception:
+        await callback.bot.send_message(  # type: ignore
+            chat_id=callback.from_user.id, text="🚫 Оформление заказа отменено."
+        )
+
     await state.clear()
 
 
@@ -123,7 +132,8 @@ async def confirm_profile(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.edit_text(  # type: ignore
             "🚫 <b>Оформление заказа отменено</b>\n\n"
             "Используйте команду /profile для редактирования ваших данных, "
-            "затем снова отправьте /order для оформления заказа."
+            "затем снова отправьте /order для оформления заказа.",
+            reply_markup=None,
         )
         await state.clear()
 
@@ -518,12 +528,44 @@ async def order_admin_comment(callback: types.CallbackQuery, state: FSMContext):
         return
 
     if callback.data == "add_comment":
-        await callback.message.edit_text(  # type: ignore
-            "💬 <b>Комментарий для администратора</b>\n\n"
-            "Введите дополнительные пожелания или комментарии для администратора:",
-            reply_markup=get_cancel_keyboard(),
-            parse_mode="HTML",
-        )
+        data = await state.get_data()
+        review_message_id = data.get("review_message_id")
+
+        if review_message_id:
+            try:
+                await callback.bot.edit_message_text(  # type: ignore
+                    chat_id=callback.from_user.id,
+                    message_id=review_message_id,
+                    text="💬 <b>Комментарий для администратора</b>\n\n"
+                    "Введите дополнительные пожелания или комментарии для администратора:",
+                    reply_markup=get_cancel_keyboard(),
+                    parse_mode="HTML",
+                )
+            except Exception:
+                await callback.bot.send_message(  # type: ignore
+                    chat_id=callback.from_user.id,
+                    text="💬 <b>Комментарий для администратора</b>\n\n"
+                    "Введите дополнительные пожелания или комментарии для администратора:",
+                    reply_markup=get_cancel_keyboard(),
+                    parse_mode="HTML",
+                )
+        else:
+            try:
+                await callback.message.edit_text(  # type: ignore
+                    "💬 <b>Комментарий для администратора</b>\n\n"
+                    "Введите дополнительные пожелания или комментарии для администратора:",
+                    reply_markup=get_cancel_keyboard(),
+                    parse_mode="HTML",
+                )
+            except Exception:
+                await callback.bot.send_message(  # type: ignore
+                    chat_id=callback.from_user.id,
+                    text="💬 <b>Комментарий для администратора</b>\n\n"
+                    "Введите дополнительные пожелания или комментарии для администратора:",
+                    reply_markup=get_cancel_keyboard(),
+                    parse_mode="HTML",
+                )
+
         await state.set_state(OrderStates.waiting_for_admin_comment_text)
         return
 
@@ -559,6 +601,7 @@ async def order_admin_comment(callback: types.CallbackQuery, state: FSMContext):
                         message_id=review_message_id,
                         text=success_text,
                         parse_mode="HTML",
+                        reply_markup=None,
                     )
                 except Exception:
                     await callback.bot.send_message(  # type: ignore
@@ -568,7 +611,9 @@ async def order_admin_comment(callback: types.CallbackQuery, state: FSMContext):
                     )
             else:
                 try:
-                    await callback.message.edit_text(success_text, parse_mode="HTML")  # type: ignore
+                    await callback.message.edit_text(  # type: ignore
+                        success_text, parse_mode="HTML", reply_markup=None
+                    )
                 except Exception:
                     await callback.bot.send_message(  # type: ignore
                         chat_id=callback.from_user.id,
@@ -585,10 +630,12 @@ async def admin_comment_text(message: types.Message, state: FSMContext):
     comment = message.text.strip()  # type: ignore
     await state.update_data(admin_comment=comment)
 
-    await message.answer(
+    sent_message = await message.answer(
         "✅ <b>Комментарий добавлен</b>\n\n"
         "Ваш комментарий сохранён. Теперь можете отправить заказ администратору.",
         reply_markup=get_send_order_keyboard(),
         parse_mode="HTML",
     )
+
+    await state.update_data(review_message_id=sent_message.message_id)
     await state.set_state(OrderStates.waiting_for_admin_comment)

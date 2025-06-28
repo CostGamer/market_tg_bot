@@ -55,9 +55,9 @@ async def handle_keyboard_buttons(message: types.Message, state: FSMContext):
             await start_order(message, state)
 
         elif message.text == "📍 Адреса":
-            from .addresses import show_addresses_command
+            from . import addresses
 
-            await show_addresses_command(message, state)
+            await addresses.show_addresses_command(message, state)
 
         elif message.text == "📦 Мои заказы":
             from .order_history import show_user_orders
