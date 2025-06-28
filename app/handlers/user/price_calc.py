@@ -16,7 +16,7 @@ price_calc_router = Router()
 
 @price_calc_router.message(Command("calculate_price"))
 async def start_calc(message: types.Message, state: FSMContext):
-    await message.answer("Введите стоимость товара в юанях!")
+    await message.answer("Введите стоимость товара в юанях 🇨🇳!")
     await state.set_state(CalcOrderStates.waiting_for_price)
 
 
@@ -33,7 +33,7 @@ async def get_price(message: types.Message, state: FSMContext):
 
     await state.update_data(price=price)
     await message.answer(
-        "Выберите основную категорию:",
+        "Выберите категорию 📂:",
         reply_markup=get_main_categories_keyboard(),
     )
     await state.set_state(CalcOrderStates.waiting_for_main_category)
@@ -81,10 +81,10 @@ async def finish_calc(callback, state, main_cat_id, sub_id):
 
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.answer(
-        f"Категория: {cat_str}\n"
-        f"Стоимость в юанях: {price:.2f}\n"
-        f"Пошлина: {fee_str}\n"
-        f"Итого к оплате: {total:.2f}"
+        f"Категория 📂: {cat_str}\n"
+        f"Стоимость в юанях 🇨🇳: {price:.2f}\n"
+        f"Пошлина 🛃: {fee_str}\n"
+        f"Итого к оплате 🇷🇺: {total:.2f} руб."
     )
     await state.clear()
     await callback.answer()

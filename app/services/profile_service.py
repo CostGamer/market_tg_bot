@@ -46,7 +46,7 @@ class ProfileService:
     def render_profile(self, user: UserPM | None) -> str:
         return (
             f"<b>Ваш профиль:</b>\n"
-            f"Имя: {user.name if user and user.name else '🟡 Заполните'}\n"
-            f"Телефон: {user.phone if user and user.phone else '🟡 Заполните'}\n"
+            f"Имя: {user.name if user and user.name else '📝 Заполните'}\n"
+            f"Телефон: {user.phone if user and user.phone else '📝 Заполните'}\n"
             f"Username: @{user.tg_username if user and user.tg_username else 'не установлен'}"
         )

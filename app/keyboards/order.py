@@ -1,71 +1,107 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def get_cancel_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="Отмена")]],
-        resize_keyboard=True,
-        one_time_keyboard=True,
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🚫 Отмена", callback_data="cancel_order")]
+        ]
     )
 
 
 def get_yes_no_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="✅ Да"), KeyboardButton(text="❌ Нет")],
-            [KeyboardButton(text="Отмена")],
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=True,
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Да, всё верно", callback_data="confirm_yes"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Нет, изменить", callback_data="confirm_no"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🚫 Отменить заказ", callback_data="cancel_order"
+                )
+            ],
+        ]
     )
 
 
 def get_quantity_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
             [
-                KeyboardButton(text="1"),
-                KeyboardButton(text="2"),
-                KeyboardButton(text="Другое"),
+                InlineKeyboardButton(text="1️⃣ Одна штука", callback_data="quantity_1"),
+                InlineKeyboardButton(text="2️⃣ Две штуки", callback_data="quantity_2"),
             ],
-            [KeyboardButton(text="Отмена")],
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=True,
+            [
+                InlineKeyboardButton(
+                    text="🔢 Ввести другое количество", callback_data="quantity_other"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🚫 Отменить заказ", callback_data="cancel_order"
+                )
+            ],
+        ]
     )
 
 
 def get_comment_or_send_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
             [
-                KeyboardButton(text="Добавить комментарий"),
-                KeyboardButton(text="Отправить заказ"),
+                InlineKeyboardButton(
+                    text="💬 Добавить комментарий для администратора",
+                    callback_data="add_comment",
+                )
             ],
-            [KeyboardButton(text="Отмена")],
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=True,
+            [
+                InlineKeyboardButton(
+                    text="🚀 Отправить заказ", callback_data="send_order"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🚫 Отменить заказ", callback_data="cancel_order"
+                )
+            ],
+        ]
     )
 
 
 def get_send_order_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="Отправить заказ")],
-            [KeyboardButton(text="Отмена")],
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=True,
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🚀 Отправить заказ", callback_data="send_order"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🚫 Отменить заказ", callback_data="cancel_order"
+                )
+            ],
+        ]
     )
 
 
 def get_addresses_keyboard_order(addresses):
     keyboard = []
-    if addresses:
-        for addr in addresses:
-            keyboard.append([KeyboardButton(text=addr["name"])])
-    keyboard.append([KeyboardButton(text="Отмена")])
-    return ReplyKeyboardMarkup(
-        keyboard=keyboard, resize_keyboard=True, one_time_keyboard=True
+    for addr in addresses:
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=f"📍 {addr['name']}",
+                    callback_data=f"address_order_{addr['id']}",
+                )
+            ]
+        )
+    keyboard.append(
+        [InlineKeyboardButton(text="🚫 Отменить заказ", callback_data="cancel_order")]
     )
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
