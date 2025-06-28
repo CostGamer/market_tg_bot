@@ -8,6 +8,7 @@ class OrderStates(StatesGroup):
     waiting_for_price = State()
     confirm_price = State()
     waiting_for_quantity = State()
+    waiting_for_quantity_text = State()
     waiting_for_description = State()
     confirm_description = State()
     choosing_address = State()
