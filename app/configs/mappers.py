@@ -4,7 +4,7 @@ KILO_MAPPER: dict = {
         "jacket": 2.5,
         "jeans": 1,
         "shoes": 1.5,
-        "other_clothes": 1.5,
+        "other": 1.5,
     },
     "accessories": {
         "watch": 1,
@@ -12,35 +12,35 @@ KILO_MAPPER: dict = {
         "wallet": 1,
         "glasses": 1,
         "jewelry": 1,
-        "other_accessories": 1,
+        "other": 1,
     },
     "electronics": {
         "headphones": 1,
         "smartwatch": 1,
         "phone": 1,
         "laptop": 2,
-        "other_electronics": 1,
+        "other": 1,
     },
-    "cosmetics": {"perfume": 1, "cream": 1, "lipstick": 1, "other_cosmetics": 1},
+    "cosmetics": {"perfume": 1, "cream": 1, "lipstick": 1, "other": 1},
     "house": {
         "carpet": 2,
         "lamp": 1,
-        "other_house": 1.5,
+        "other": 1.5,
     },
     "toys": {
         "soft_toy": 1.5,
         "constructor": 1.5,
         "model": 1,
-        "other_toys": 1.5,
+        "other": 1.5,
     },
     "sport": {
         "tent": 3,
         "sleeping_bag": 2,
         "bicycle": 10,
         "smartwatch": 1,
-        "other_sport": 2,
+        "other": 2,
     },
-    "other": 2,
+    "other": {"other": 2},
 }
 
 MAIN_CATEGORY_NAMES = {
@@ -60,7 +60,7 @@ SUBCATEGORY_NAMES = {
         "jacket": "🧥 Куртка, пуховик",
         "jeans": "👖 Джинсы, штаны",
         "shoes": "👞 Обувь",
-        "other_clothes": "👚 Прочая одежда",
+        "other": "👚 Прочая одежда",
     },
     "accessories": {
         "watch": "⌚ Часы",
@@ -68,38 +68,41 @@ SUBCATEGORY_NAMES = {
         "wallet": "💳 Кошелек, кардхолдер",
         "glasses": "👓 Очки",
         "jewelry": "💍 Бижутерия, украшения",
-        "other_accessories": "🎀 Прочее",
+        "other": "🎀 Прочее",
     },
     "electronics": {
         "headphones": "🎧 Наушники",
         "smartwatch": "⌚ Смарт-часы, браслет",
         "phone": "📱 Телефон, планшет",
         "laptop": "💻 Ноутбук",
-        "other_electronics": "🔌 Прочая электроника",
+        "other": "🔌 Прочая электроника",
     },
     "cosmetics": {
         "perfume": "🧴 Духи, туалетная вода",
         "cream": "🧴 Крем",
         "lipstick": "💄 Помада",
-        "other_cosmetics": "💅 Прочая косметика",
+        "other": "💅 Прочая косметика",
     },
     "house": {
         "carpet": "🧶 Ковер",
         "lamp": "💡 Светильник",
-        "other_house": "🏠 Прочее",
+        "other": "🏠 Прочее",
     },
     "toys": {
         "soft_toy": "🧸 Мягкие игрушки",
         "constructor": "🧩 Конструктор",
         "model": "🚗 Модельки",
-        "other_toys": "🎲 Прочее",
+        "other": "🎲 Прочее",
     },
     "sport": {
         "tent": "⛺ Палатка",
         "sleeping_bag": "🛏️ Спальник",
         "bicycle": "🚲 Велосипед",
         "smartwatch": "⌚ Смарт-часы, браслет",
-        "other_sport": "⚽ Прочее",
+        "other": "⚽ Прочее",
+    },
+    "other": {
+        "other": "❓ Прочее",
     },
 }
 
