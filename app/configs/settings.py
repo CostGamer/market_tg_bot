@@ -72,7 +72,7 @@ class OtherSettings(BaseModel):
 
 class Settings(BaseModel):
     database: PostgresSettings = Field(default_factory=lambda: PostgresSettings(**env))  # type: ignore
-    logging: LoggingSettings = Field(default_factory=lambda: LoggingSettings(**env))
-    tg: TGSettings = Field(default_factory=lambda: TGSettings(**env))
-    different: OtherSettings = Field(default_factory=lambda: OtherSettings(**env))
+    logging: LoggingSettings = Field(default_factory=lambda: LoggingSettings(**env))  # type: ignore
+    tg: TGSettings = Field(default_factory=lambda: TGSettings(**env))  # type: ignore
+    different: OtherSettings = Field(default_factory=lambda: OtherSettings(**env))  # type: ignore
     redis: RedisSettings = Field(default_factory=lambda: RedisSettings(**env))  # type: ignore
