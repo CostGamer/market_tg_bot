@@ -20,3 +20,4 @@ jobs:
           branch: 'master'
           git_remote_url: ${{ secrets.DOKKU_REMOTE_URL }}
           ssh_private_key: ${{ secrets.DOKKU_SSH_KEY }}
+          ssh_host_key: ${{ secrets.SSH_HOST_KEY }}
