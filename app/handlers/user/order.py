@@ -146,8 +146,13 @@ async def choose_address(callback: types.CallbackQuery, state: FSMContext):
         await handle_cancel_order(callback, state)
         return
 
-    if callback.data.startswith("address_order_"):  # type: ignore
-        address_id = int(callback.data.split("_")[2])  # type: ignore
+    if callback.data and callback.data.startswith("address_order_"):
+        try:
+            address_id = int(callback.data.split("_")[2])
+        except (IndexError, ValueError):
+            await callback.message.edit_text("❌ Ошибка в данных адреса!")  # type: ignore
+            return
+
         data = await state.get_data()
         addresses = data.get("addresses", [])
 
@@ -202,7 +207,24 @@ async def confirm_address(callback: types.CallbackQuery, state: FSMContext):
 
 @order_router.message(OrderStates.waiting_for_url, F.text)
 async def get_url(message: types.Message, state: FSMContext):
-    url = message.text.strip()  # type: ignore
+    if not message.text:
+        await message.answer(
+            "❌ <b>Пустое сообщение</b>\n\n" "Пожалуйста, отправьте ссылку на товар.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    url = message.text.strip()
+
+    if not url:
+        await message.answer(
+            "❌ <b>Пустая ссылка</b>\n\n"
+            "Пожалуйста, введите корректную ссылку на товар.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
 
     if not is_valid_url(url):
         await message.answer(
@@ -222,6 +244,16 @@ async def get_url(message: types.Message, state: FSMContext):
         parse_mode="HTML",
     )
     await state.set_state(OrderStates.confirm_url)
+
+
+@order_router.message(OrderStates.waiting_for_url)
+async def url_invalid_format(message: types.Message, state: FSMContext):
+    await message.answer(
+        "❌ <b>Неверный формат</b>\n\n"
+        "Пожалуйста, отправьте ссылку на товар текстовым сообщением.",
+        reply_markup=get_cancel_keyboard(),
+        parse_mode="HTML",
+    )
 
 
 @order_router.callback_query(OrderStates.confirm_url)
@@ -256,8 +288,13 @@ async def main_category_selected(callback: types.CallbackQuery, state: FSMContex
         await handle_cancel_order(callback, state)
         return
 
-    if callback.data.startswith("maincat_"):  # type: ignore
-        main_cat_id = callback.data.split("_")[1]  # type: ignore
+    if callback.data and callback.data.startswith("maincat_"):
+        try:
+            main_cat_id = callback.data.split("_")[1]
+        except IndexError:
+            await callback.message.edit_text("❌ Ошибка в данных категории!")  # type: ignore
+            return
+
         await state.update_data(main_cat_id=main_cat_id)
 
         if not CategoryHelper.has_subcategories(main_cat_id):
@@ -297,23 +334,35 @@ async def subcategory_selected(callback: types.CallbackQuery, state: FSMContext)
         await state.set_state(OrderStates.waiting_for_main_category)
         return
 
-    if callback.data.startswith("subcat_"):  # type: ignore
-        parts = callback.data.split("_")  # type: ignore
-        if len(parts) >= 3:
-            sub_cat_id = parts[2]
-            await state.update_data(sub_cat_id=sub_cat_id)
-            await callback.message.edit_text(  # type: ignore
-                "📸 <b>Фотография товара</b>\n\n"
-                "Пришлите скриншот или фотографию товара для администратора:",
-                reply_markup=get_cancel_keyboard(),
-                parse_mode="HTML",
-            )
-            await state.set_state(OrderStates.waiting_for_photo)
+    if callback.data and callback.data.startswith("subcat_"):
+        try:
+            parts = callback.data.split("_")
+            if len(parts) >= 3:
+                sub_cat_id = parts[2]
+                await state.update_data(sub_cat_id=sub_cat_id)
+                await callback.message.edit_text(  # type: ignore
+                    "📸 <b>Фотография товара</b>\n\n"
+                    "Пришлите скриншот или фотографию товара для администратора:",
+                    reply_markup=get_cancel_keyboard(),
+                    parse_mode="HTML",
+                )
+                await state.set_state(OrderStates.waiting_for_photo)
+        except (IndexError, ValueError):
+            await callback.message.edit_text("❌ Ошибка в данных подкатегории!")  # type: ignore
 
 
 @order_router.message(OrderStates.waiting_for_photo, F.photo)
 async def get_photo(message: types.Message, state: FSMContext):
-    photo = message.photo[-1]  # type: ignore
+    if not message.photo:
+        await message.answer(
+            "❌ <b>Ошибка получения фото</b>\n\n"
+            "Пожалуйста, отправьте фотографию ещё раз.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    photo = message.photo[-1]
     file_id = photo.file_id
 
     await state.update_data(photo_url=file_id)
@@ -338,7 +387,24 @@ async def photo_not_sent(message: types.Message, state: FSMContext):
 
 @order_router.message(OrderStates.waiting_for_price, F.text)
 async def get_price(message: types.Message, state: FSMContext):
-    valid, price_yuan = CategoryHelper.validate_price(message.text)  # type: ignore
+    if not message.text:
+        await message.answer(
+            "❌ <b>Пустое сообщение</b>\n\n" "Введите цену товара в китайских юанях.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    price_text = message.text.strip()
+    if not price_text:
+        await message.answer(
+            "❌ <b>Пустая цена</b>\n\n" "Введите корректную цену товара.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    valid, price_yuan = CategoryHelper.validate_price(price_text)
 
     if not valid:
         await message.answer(
@@ -372,6 +438,16 @@ async def get_price(message: types.Message, state: FSMContext):
         parse_mode="HTML",
     )
     await state.set_state(OrderStates.confirm_price)
+
+
+@order_router.message(OrderStates.waiting_for_price)
+async def price_invalid_format(message: types.Message, state: FSMContext):
+    await message.answer(
+        "❌ <b>Неверный формат</b>\n\n"
+        "Пожалуйста, отправьте цену товара текстовым сообщением.",
+        reply_markup=get_cancel_keyboard(),
+        parse_mode="HTML",
+    )
 
 
 @order_router.callback_query(OrderStates.confirm_price)
@@ -409,7 +485,12 @@ async def get_quantity_callback(callback: types.CallbackQuery, state: FSMContext
         return
 
     if callback.data in ["quantity_1", "quantity_2"]:
-        quantity = int(callback.data.split("_")[1])
+        try:
+            quantity = int(callback.data.split("_")[1])
+        except (IndexError, ValueError):
+            await callback.message.edit_text("❌ Ошибка в данных количества!")  # type: ignore
+            return
+
         await state.update_data(quantity=quantity)
         await callback.message.edit_text(  # type: ignore
             "📝 <b>Описание товара</b>\n\n"
@@ -430,7 +511,24 @@ async def get_quantity_callback(callback: types.CallbackQuery, state: FSMContext
 
 @order_router.message(OrderStates.waiting_for_quantity_text, F.text)
 async def get_quantity_text(message: types.Message, state: FSMContext):
-    valid, quantity = CategoryHelper.validate_quantity(message.text.strip())  # type: ignore
+    if not message.text:
+        await message.answer(
+            "❌ <b>Пустое сообщение</b>\n\n" "Введите количество товара числом.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    quantity_text = message.text.strip()
+    if not quantity_text:
+        await message.answer(
+            "❌ <b>Пустое количество</b>\n\n" "Введите корректное количество товара.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    valid, quantity = CategoryHelper.validate_quantity(quantity_text)
 
     if not valid:
         await message.answer(
@@ -451,9 +549,35 @@ async def get_quantity_text(message: types.Message, state: FSMContext):
     await state.set_state(OrderStates.waiting_for_description)
 
 
+@order_router.message(OrderStates.waiting_for_quantity_text)
+async def quantity_invalid_format(message: types.Message, state: FSMContext):
+    await message.answer(
+        "❌ <b>Неверный формат</b>\n\n"
+        "Пожалуйста, отправьте количество товара текстовым сообщением.",
+        reply_markup=get_cancel_keyboard(),
+        parse_mode="HTML",
+    )
+
+
 @order_router.message(OrderStates.waiting_for_description, F.text)
 async def get_description(message: types.Message, state: FSMContext):
-    desc = message.text.strip()  # type: ignore
+    if not message.text:
+        await message.answer(
+            "❌ <b>Пустое сообщение</b>\n\n" "Опишите товар подробнее.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    desc = message.text.strip()
+    if not desc:
+        await message.answer(
+            "❌ <b>Пустое описание</b>\n\n" "Пожалуйста, опишите товар подробнее.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
     await state.update_data(description=desc)
 
     await message.answer(
@@ -465,6 +589,16 @@ async def get_description(message: types.Message, state: FSMContext):
         parse_mode="HTML",
     )
     await state.set_state(OrderStates.confirm_description)
+
+
+@order_router.message(OrderStates.waiting_for_description)
+async def description_invalid_format(message: types.Message, state: FSMContext):
+    await message.answer(
+        "❌ <b>Неверный формат</b>\n\n"
+        "Пожалуйста, отправьте описание товара текстовым сообщением.",
+        reply_markup=get_cancel_keyboard(),
+        parse_mode="HTML",
+    )
 
 
 @order_router.callback_query(OrderStates.confirm_description)
@@ -549,22 +683,6 @@ async def order_admin_comment(callback: types.CallbackQuery, state: FSMContext):
                     reply_markup=get_cancel_keyboard(),
                     parse_mode="HTML",
                 )
-        else:
-            try:
-                await callback.message.edit_text(  # type: ignore
-                    "💬 <b>Комментарий для администратора</b>\n\n"
-                    "Введите дополнительные пожелания или комментарии для администратора:",
-                    reply_markup=get_cancel_keyboard(),
-                    parse_mode="HTML",
-                )
-            except Exception:
-                await callback.bot.send_message(  # type: ignore
-                    chat_id=callback.from_user.id,
-                    text="💬 <b>Комментарий для администратора</b>\n\n"
-                    "Введите дополнительные пожелания или комментарии для администратора:",
-                    reply_markup=get_cancel_keyboard(),
-                    parse_mode="HTML",
-                )
 
         await state.set_state(OrderStates.waiting_for_admin_comment_text)
         return
@@ -627,7 +745,24 @@ async def order_admin_comment(callback: types.CallbackQuery, state: FSMContext):
 
 @order_router.message(OrderStates.waiting_for_admin_comment_text, F.text)
 async def admin_comment_text(message: types.Message, state: FSMContext):
-    comment = message.text.strip()  # type: ignore
+    if not message.text:
+        await message.answer(
+            "❌ <b>Пустое сообщение</b>\n\n" "Введите комментарий для администратора.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
+    comment = message.text.strip()
+    if not comment:
+        await message.answer(
+            "❌ <b>Пустой комментарий</b>\n\n"
+            "Пожалуйста, введите комментарий для администратора.",
+            reply_markup=get_cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
+
     await state.update_data(admin_comment=comment)
 
     sent_message = await message.answer(
@@ -639,3 +774,13 @@ async def admin_comment_text(message: types.Message, state: FSMContext):
 
     await state.update_data(review_message_id=sent_message.message_id)
     await state.set_state(OrderStates.waiting_for_admin_comment)
+
+
+@order_router.message(OrderStates.waiting_for_admin_comment_text)
+async def admin_comment_invalid_format(message: types.Message, state: FSMContext):
+    await message.answer(
+        "❌ <b>Неверный формат</b>\n\n"
+        "Пожалуйста, отправьте комментарий текстовым сообщением.",
+        reply_markup=get_cancel_keyboard(),
+        parse_mode="HTML",
+    )
