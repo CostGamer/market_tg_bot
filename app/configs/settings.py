@@ -61,7 +61,7 @@ class OtherSettings(BaseModel):
     cb_rf_url: str = Field(
         default="https://www.cbr-xml-daily.ru/daily_json.js", alias="CB_RF_URL"
     )
-    admin_ids: str = Field(default="497390436", alias="ADMIN_USER_IDS")
+    admin_ids: str = Field(default="111111", alias="ADMIN_USER_IDS")
     support_group_id: str = Field(alias="SUPPORT_GROUP_ID")
     orders_group_id: str = Field(alias="ORDERS_GROUP_ID")
 
