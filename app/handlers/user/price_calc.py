@@ -62,7 +62,9 @@ async def subcategory_selected(callback: types.CallbackQuery, state: FSMContext)
     await finish_calc(callback, state, main_cat_id, sub_id)
 
 
-async def finish_calc(callback, state, main_cat_id, sub_id):
+async def finish_calc(
+    callback: types.CallbackQuery, state: FSMContext, main_cat_id, sub_id
+):
     data = await state.get_data()
     price = data["price"]
 
@@ -84,7 +86,9 @@ async def finish_calc(callback, state, main_cat_id, sub_id):
         f"Категория 📂: {cat_str}\n"
         f"Стоимость в юанях 🇨🇳: {price:.2f}\n"
         f"Пошлина 🛃: {fee_str}\n"
-        f"Итого к оплате 🇷🇺: {total:.2f} руб."
+        f"Доставка 🚚: включена\n"
+        f"\n"
+        f"💰 <b>Итого к оплате с доставкой:</b> 🇷🇺 {total:.2f} руб."
     )
     await state.clear()
     await callback.answer()

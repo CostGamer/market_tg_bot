@@ -432,7 +432,7 @@ async def get_price(message: types.Message, state: FSMContext):
     await message.answer(
         f"💴 <b>Подтверждение цены</b>\n\n"
         f"Цена товара: <b>{price_yuan} юаней</b>\n"
-        f"Примерно: <b>{price_rub:.2f} рублей</b>\n\n"
+        f"Финальная сумма с доставкой: <b>{price_rub:.2f} рублей</b>\n\n"
         f"Цена указана верно?",
         reply_markup=get_yes_no_keyboard(),
         parse_mode="HTML",

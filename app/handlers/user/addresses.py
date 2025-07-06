@@ -208,7 +208,8 @@ async def confirm_city(callback: types.CallbackQuery, state: FSMContext):
 
     if callback.data == "confirm_yes":
         await callback.message.edit_text(  # type: ignore
-            "🏠 Введите адрес пункта выдачи (улица, дом, офис):"
+            "🏠 <b>Введите адрес пункта выдачи</b> (улица, дом, офис):\n\n"
+            "📦 <i>Доступные варианты: СДЭК, Boxberry, Почта России</i>"
         )
         await state.set_state(AddressStates.waiting_for_address)
     elif callback.data == "confirm_no":
@@ -242,7 +243,8 @@ async def confirm_address(callback: types.CallbackQuery, state: FSMContext):
         await state.set_state(AddressStates.waiting_for_index)
     elif callback.data == "confirm_no":
         await callback.message.edit_text(  # type: ignore
-            "🏠 Введите адрес пункта выдачи (улица, дом, офис):"
+            "🏠 <b>Введите адрес пункта выдачи</b> (улица, дом, офис):\n\n"
+            "📦 <i>Доступные варианты: СДЭК, Boxberry, Почта России</i>"
         )
         await state.set_state(AddressStates.waiting_for_address)
 
