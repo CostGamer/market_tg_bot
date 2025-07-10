@@ -64,6 +64,8 @@ class OtherSettings(BaseModel):
     admin_ids: str = Field(default="111111", alias="ADMIN_USER_IDS")
     support_group_id: str = Field(alias="SUPPORT_GROUP_ID")
     orders_group_id: str = Field(alias="ORDERS_GROUP_ID")
+    promocode_percentage: int = Field(alias="PROMO_PERCENT")
+    promocode_lifetime: int = Field(alias="PROMO_LIFETIME")
 
     @property
     def list_of_admin_ids(self) -> list[int]:

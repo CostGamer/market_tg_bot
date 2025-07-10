@@ -11,6 +11,7 @@ from app.models.sql_models.sql_base import Base
 if TYPE_CHECKING:
     from .sql_user import User
     from .sql_address import Address
+    from .sql_promocodes import Promocodes
 
 
 class Order(Base):
@@ -34,6 +35,10 @@ class Order(Base):
     track_cn: Mapped[str] = mapped_column(nullable=True)
     track_ru: Mapped[str] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(nullable=False)
+    promocode_id: Mapped[int] = mapped_column(
+        ForeignKey("promocodes.id"), nullable=True
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="orders")
     address: Mapped["Address"] = relationship("Address", back_populates="orders")
+    promocode: Mapped["Promocodes"] = relationship("Promocodes", back_populates="order")
