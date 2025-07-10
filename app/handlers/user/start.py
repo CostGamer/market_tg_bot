@@ -31,6 +31,7 @@ async def cmd_start(message: types.Message):
 @start_router.message(
     lambda message: message.text
     in [
+        "🤔 Как заказать?",
         "👤 Профиль",
         "📋 Оформить заказ",
         "📍 Адреса",
@@ -48,6 +49,11 @@ async def handle_keyboard_buttons(message: types.Message, state: FSMContext):
             from .profile import show_profile
 
             await show_profile(message)
+
+        elif message.text == "🤔 Как заказать?":
+            from .how_to_order import how_to_order_handler
+
+            await how_to_order_handler(message)
 
         elif message.text == "📋 Оформить заказ":
             from .order import start_order

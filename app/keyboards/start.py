@@ -5,15 +5,21 @@ def get_start_keyboard() -> ReplyKeyboardMarkup:
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="👤 Профиль"),
+                KeyboardButton(text="🤔 Как заказать?"),
                 KeyboardButton(text="📋 Оформить заказ"),
             ],
-            [KeyboardButton(text="📍 Адреса"), KeyboardButton(text="📦 Мои заказы")],
             [
-                KeyboardButton(text="💱 Курс валют"),
-                KeyboardButton(text="🧮 Калькулятор"),
+                KeyboardButton(text="👤 Профиль"),
+                KeyboardButton(text="📦 Мои заказы"),
             ],
-            [KeyboardButton(text="💬 Поддержка")],
+            [
+                KeyboardButton(text="📍 Адреса"),
+                KeyboardButton(text="💱 Курс валют"),
+            ],
+            [
+                KeyboardButton(text="🧮 Калькулятор"),
+                KeyboardButton(text="💬 Поддержка"),
+            ],
         ],
         resize_keyboard=True,
         one_time_keyboard=False,

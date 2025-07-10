@@ -139,6 +139,7 @@ class OrderService:
         address_str_escaped = self._escape_html(address_str)
         category_full_escaped = self._escape_html(category_full)
         admin_comment_escaped = self._escape_html(admin_comment)
+        user_tg_id = order.user_id
 
         username_str = (
             f"@{self._escape_html(tg_username)}" if tg_username else "не указан"
@@ -150,6 +151,7 @@ class OrderService:
             f"🆕 <b>Новый заказ #{order.id}</b>\n\n"
             f"👤 <b>Пользователь:</b> {username_str}\n"
             f"📱 <b>Телефон:</b> {phone}\n\n"
+            f"💬 <a href='tg://user?id={user_tg_id}'>Связаться с клиентом</a>\n"
             f"🔗 <b>Ссылка:</b> {product_url}\n"
             f"📂 <b>Категория:</b> {category_full_escaped}\n"
             f"💴 <b>Цена:</b> {order.unit_price_rmb} юаней × {order.quantity} = {total_yuan} юаней "
