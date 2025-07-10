@@ -176,7 +176,7 @@ async def get_support_question(message: types.Message, state: FSMContext):
         f"🆘 <b>Новое обращение в поддержку!</b>\n"
         f"👤 Username: <code>{username}</code>\n"
         f"📞 Телефон: <code>{phone}</code>\n"
-        f"🆔 Telegram ID: <code>{message.from_user.id}</code>\n\n"  # type: ignore
+        f"🆔 <a href='tg://user?id={message.from_user.id}'>Связаться с клиентом</a>\n\n"  # type: ignore
         f"❓ Вопрос:\n{question}"
     )
     await message.bot.send_message(  # type: ignore
