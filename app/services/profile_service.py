@@ -36,9 +36,25 @@ class ProfileService:
     async def create_user(
         self, tg_id: int, tg_username: str, name: str, phone: str
     ) -> UserPM | None:
-        new_user = UserPM(tg_id=tg_id, tg_username=tg_username, name=name, phone=phone)
-        await self.repo.post_user(new_user)
-        return await self.repo.get_user_info(tg_id)
+        user = await self.repo.get_user_info(tg_id)
+
+        if user:
+            updated = UserPM(
+                tg_id=tg_id, tg_username=tg_username, name=name, phone=phone
+            )
+            await self.repo.update_user_info(updated)
+            return await self.repo.get_user_info(tg_id)
+        else:
+            new_user = UserPM(
+                tg_id=tg_id, tg_username=tg_username, name=name, phone=phone
+            )
+            await self.repo.post_user(new_user)
+            return await self.repo.get_user_info(tg_id)
+
+    async def complete_profile(
+        self, tg_id: int, tg_username: str, name: str, phone: str
+    ) -> UserPM | None:
+        return await self.create_user(tg_id, tg_username, name, phone)
 
     async def is_profile_complete(self, user: UserPM | None) -> bool:
         return bool(user and user.name and user.phone)
