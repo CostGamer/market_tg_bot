@@ -16,7 +16,7 @@ class User(Base):
 
     tg_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(nullable=True)
-    phone: Mapped[str] = mapped_column(nullable=False)
+    phone: Mapped[str] = mapped_column(nullable=True)
     tg_username: Mapped[str] = mapped_column(nullable=True)
     last_game_time: Mapped[datetime] = mapped_column(
         nullable=True,

@@ -110,7 +110,7 @@ async def set_phone(message: types.Message, state: FSMContext):
             await state.clear()
         else:
             name = data.get("name", "")
-            new_user = await service.create_user(tg_id, tg_username, name, phone)
+            new_user = await service.complete_profile(tg_id, tg_username, name, phone)
             text = service.render_profile(new_user)
             await message.answer(
                 text, reply_markup=get_profile_keyboard(), parse_mode="HTML"
